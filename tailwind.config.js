@@ -14,8 +14,10 @@ module.exports = {
             colors: {
                 primary: '#2563EB', // biru tajam untuk header tabel
                 background: '#f9fafb', // abu muda
+                dark: '#1f2937',
             },
             fontFamily: {
+                poppins: ['Poppins', 'sans-serif'],
                 serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
