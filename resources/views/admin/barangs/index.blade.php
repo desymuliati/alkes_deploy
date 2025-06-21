@@ -7,9 +7,19 @@
     </x-slot>
 
     <x-slot name="script">
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+        <!-- Ganti ke Tailwind version -->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css">
         <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+        <style>
+            table.dataTable thead .sorting::after,
+            table.dataTable thead .sorting_asc::after,
+            table.dataTable thead .sorting_desc::after {
+                opacity: 0.4;
+                margin-left: 5px;
+            }
+        </style>
 
         <script>
             $(function () {
@@ -37,7 +47,7 @@
                                 if (type === 'display') return row.formatted_stok;
                                 return data;
                             }
-                        },                        
+                        },
                         {
                             data: 'harga',
                             name: 'harga',
@@ -130,30 +140,31 @@
                 <div class="px-4 py-5 bg-white sm:p-6">
                     <div class="overflow-x-auto">
                         <table id="dataTable" class="min-w-full divide-y divide-gray-200">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nomor Produk Katalog</th>
-                                <th>Nama Produk</th>
-                                <th>Satuan</th>
-                                <th>Jumlah Stok</th>                                
-                                <th>Harga</th>
-                                <th>Expired</th>
-                                <th>Masuk</th>
-                                <th>Keluar</th>
-                                <th>Keterangan</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{-- Diisi oleh DataTables via Ajax --}}
-                        </tbody>
-                    </table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nomor Produk Katalog</th>
+                                    <th>Nama Produk</th>
+                                    <th>Satuan</th>
+                                    <th>Jumlah Stok</th>
+                                    <th>Harga</th>
+                                    <th>Expired</th>
+                                    <th>Masuk</th>
+                                    <th>Keluar</th>
+                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{-- Diisi oleh DataTables via Ajax --}}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    {{-- Footer --}}
+
     <footer class="bg-white border-t mt-12">
         <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
             Copyright &copy; 2025 <span class="font-semibold">PT. Borneo Sejahtera Medika</span>
