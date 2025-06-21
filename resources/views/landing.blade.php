@@ -2,7 +2,7 @@
     <!-- Logo (Klik kembali ke landing) -->
     <a href="{{ url('/') }}"
        class="fixed top-[60px] left-[60px] w-[100px] h-[100px] rounded-full bg-blue-600 shadow-lg z-50 flex items-center justify-center cursor-pointer">
-        <img src="{{ Vite::asset('resources/images/logo-bsm.png') }}" alt="Logo" class="w-full h-auto rounded-full">
+        <img src="{{ asset('images/logo-bsm.png') }}" alt="Logo" class="w-full h-auto rounded-full">
     </a>
 
     <!-- Sidebar Toggle Icon -->
@@ -45,7 +45,7 @@
 
     <!-- Gambar Stock -->
     <div class="relative w-full mt-10">
-        <img src="{{ Vite::asset('resources/images/stock.jpg') }}"
+        <img src="{{ asset('images/stock.jpg') }}"
              alt="Stock Image"
              class="absolute right-[10%] top-[70%] transform -translate-y-1/2 w-[400px] h-[250px] z-50 rounded shadow-md">
     </div>

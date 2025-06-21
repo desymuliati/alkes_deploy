@@ -262,7 +262,7 @@
 <body>
     {{-- Logo (Klik kembali ke landing page) --}}
     <a href="{{ url('/') }}" class="logo-box">
-        <img src="{{ Vite::asset('resources/images/logo-bsm.png') }}" alt="Logo BSM">
+        <img src="{{ asset('images/logo-bsm.png') }}" alt="Logo BSM">
     </a>
 
     {{-- Sidebar Toggle Icon (Hamburger) --}}
@@ -290,7 +290,7 @@
 
     {{-- Gambar Stock --}}
     <div class="stock-image-container">
-        <img src="{{ Vite::asset('resources/images/stock.jpg') }}" alt="Stock Image" class="stock-image">
+        <img src="{{ asset('images/stock.jpg') }}" alt="Stock Image" class="stock-image">
     </div>
 
     {{-- Footer --}}
