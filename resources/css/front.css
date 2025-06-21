@@ -1,0 +1,215 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    .flex::before,
+    .flex::after {
+        display: none !important;
+    }
+
+    img {
+        @apply object-cover;
+    }
+
+    body {
+        @apply font-poppins text-dark;
+        margin: 0; /* Pastikan margin body 0 */
+        background-color: #f4f4f4; /* Warna background global */
+    }
+}
+
+@layer components {
+    .nav-link-item {
+        @apply text-base font-normal transition-all cursor-pointer text-secondary hover:text-dark hover:underline underline-offset-2;
+    }
+
+    .nav-link-item.active {
+        @apply font-semibold text-dark;
+    }
+
+    .btn-primary {
+        @apply relative block text-white py-3 px-[26px] min-h-[47px] bg-primary font-semibold text-base rounded-full transition-all duration-[320ms] drop-shadow-[0_15px_20px_rgba(71,67,251,0.3)] hover:drop-shadow-none hover:shadow-[0_0_0_1px_#ffffff_inset] min-w-[180px] text-center;
+    }
+
+    .btn-primary > p {
+        @apply transition-all duration-[320ms] absolute left-1/2 -translate-x-1/2 group-hover:left-[26px] group-hover:translate-x-0 w-max;
+    }
+
+    .btn-primary > img {
+        @apply transition-all duration-[320ms] opacity-0 group-hover:opacity-100 right-1/2 group-hover:right-[26px] absolute;
+    }
+
+    .btn-secondary {
+        @apply px-10 py-4 text-center rounded-[50px] border border-grey hover:bg-dark transition-all hover:text-white text-base font-medium text-dark block;
+    }
+
+    .card-popular {
+        @apply p-4 bg-white rounded-[22px] flex flex-col gap-4 relative transition ease-in-out duration-300 hover:shadow-[0_22px_50px_#D4D6DA] hover:scale-[1.02];
+    }
+
+    .vr {
+        @apply self-stretch w-[1px] min-h-[1em] bg-grey;
+    }
+
+    .thumbnail {
+        @apply rounded-[18px] h-[75px] md:h-[120px] w-full transition-all;
+    }
+
+    .thumbnail.selected {
+        @apply ring-[4px] ring-[#FF9447];
+    }
+
+    .boxPayment input[type="radio"]:checked + label {
+        @apply shadow-primary;
+    }
+}
+
+@layer utilities {
+    body[data-aos-delay="3400"] [data-aos],
+    [data-aos][data-aos][data-aos-delay="3400"] {
+        transition-delay: 3400ms;
+    }
+
+    .shadow-primary {
+        @apply shadow-[0_0_0_2px_#4743FB_inset];
+    }
+}
+[x-cloak] {
+    display: none;
+}
+
+/* Custom CSS dari kode Anda, sedikit dimodifikasi untuk integrasi */
+.logo-box {
+    background-color: blue;
+    width: 100px;
+    height: auto;
+    border-radius: 50%;
+    box-shadow: 0px 5px 10px rgba(0.5, 0, 255, 0.5);
+    display: block;
+    align-items: center;
+    justify-content: center;
+    position: fixed; /* Ubah dari absolute ke fixed agar tetap di posisi saat scroll */
+    top: 20px; /* Sesuaikan posisi */
+    left: 20px; /* Sesuaikan posisi */
+    cursor: pointer;
+    z-index: 50;
+    overflow: hidden; /* Tambahkan ini agar gambar logo tidak keluar dari border-radius */
+}
+
+.logo-box img { /* Target gambar di dalam logo-box */
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Pastikan logo terlihat penuh */
+    border-radius: 50%; /* Agar logo juga ikut berbentuk lingkaran */
+}
+
+
+.sidebar-icon {
+    position: fixed; /* Ubah dari absolute ke fixed */
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+    z-index: 300;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0; /* Sesuaikan agar dari paling atas */
+    right: 0;
+    width: 250px; /* Lebar sidebar lebih lebar sedikit */
+    height: 100vh;
+    background-color: #333;
+    color: white;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    padding-top: 60px; /* Beri padding agar tidak menempel di atas */
+    z-index: 200;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.2); /* Tambah shadow */
+}
+
+.sidebar.active {
+    transform: translateX(0);
+}
+
+.sidebar a {
+    padding: 15px;
+    text-decoration: none;
+    display: block;
+    color: white;
+    border-left: 4px solid transparent;
+    transition: 0.3s;
+}
+
+.sidebar a:hover {
+    background: #007bff;
+    border-left: 4px solid white;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 100;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* Penyesuaian untuk tabel */
+.table-container {
+    @apply bg-white p-6 rounded-lg shadow-md overflow-x-auto;
+}
+
+table {
+    @apply w-full text-left table-auto;
+    border-collapse: collapse;
+}
+
+th, td {
+    @apply px-4 py-3 border-b border-gray-200;
+}
+
+th {
+    @apply bg-blue-600 text-white font-semibold uppercase text-sm;
+}
+
+/* Penyesuaian untuk chart */
+.chart-container {
+    @apply bg-white p-6 rounded-lg shadow-md;
+    max-width: 500px; /* Batasi lebar chart */
+    margin: 20px auto; /* Pusatkan chart */
+}
+
+/* Footer tetap di bawah */
+footer {
+    @apply text-center p-5 mt-auto border-t border-gray-200 bg-white; /* Gunakan Tailwind untuk styling footer */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .logo-box {
+        width: 80px;
+        height: auto;
+        top: 10px;
+        left: 10px;
+    }
+    .sidebar-icon {
+        top: 10px;
+        right: 10px;
+    }
+    .sidebar {
+        width: 200px;
+    }
+    .table-container, .chart-container {
+        padding: 10px;
+    }
+}
