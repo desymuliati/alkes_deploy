@@ -28,10 +28,10 @@
     "SESSION_DRIVER": "cookie",
 
     "DB_CONNECTION": "mysql",
-    "DB_HOST": "127.0.0.1",
-    "DB_PORT": "3306",
-    "DB_DATABASE": "db_alkes",
-    "DB_USERNAME": "root",
-    "DB_PASSWORD": ""
+    "DB_HOST": "k7edf.h.filess.io",
+    "DB_PORT": "3307",
+    "DB_DATABASE": "dbalkes_steprockof",
+    "DB_USERNAME": "dbalkes_steprockof",
+    "DB_PASSWORD": "1249d5afc9c544f6c2f93b79042ed038fe631e53"
   }
 }
