@@ -4,6 +4,14 @@
 @tailwind utilities;
 
 @layer base {
+    .font-poppins {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .text-dark {
+        color: #1f2937;
+    }
+
     .flex::before,
     .flex::after {
         display: none !important;
@@ -14,7 +22,6 @@
     }
 
     body {
-        font-family: 'Poppins', sans-serif;
         @apply font-poppins text-dark;
         margin: 0; /* Pastikan margin body 0 */
         background-color: #f4f4f4; /* Warna background global */
