@@ -16,7 +16,7 @@
             @else
                 <a href="/"> {{-- Rute default jika belum login --}}
             @endauth
-                <img src="{{ asset('images/logo-bsm.png') }}" alt="Logo" class="h-9 w-auto rounded-full shadow" />
+                <img src="{{ Vite::asset('resources/images/logo-bsm.png') }}" alt="Logo" class="h-9 w-auto rounded-full shadow" />
             </a>
         </div>
         <div class="relative ml-4">
@@ -75,7 +75,7 @@
         @else
             <a href="/"> {{-- Rute default jika belum login --}}
         @endauth
-            <img src="{{ asset('images/logo-bsm.png') }}" alt="Logo" class="h-9 w-auto rounded-full shadow" />
+            <img src="{{ Vite::asset('resources/images/logo-bsm.png') }}" alt="Logo" class="h-9 w-auto rounded-full shadow" />
         </a>
         <div class="cursor-pointer p-2" onclick="toggleSidebar()">
             <div class="w-6 h-0.5 bg-white mb-1"></div>
