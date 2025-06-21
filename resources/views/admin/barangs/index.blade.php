@@ -19,7 +19,7 @@
                     stateSave: true,
                     order: [[0, 'desc']],
                     ajax: {
-                        url: '{!! url()->current() !!}',
+                        url: '/api/index.php?action=data',
                     },
                     language: {
                         url: '/js/id.json'
