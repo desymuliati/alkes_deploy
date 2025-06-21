@@ -19,7 +19,7 @@
                     stateSave: true,
                     order: [[0, 'desc']],
                     ajax: {
-                        url: '/api/index.php?action=data',
+                        url: '{{ route('admin.barangs.index') }}',
                     },
                     language: {
                         url: '/js/id.json'
