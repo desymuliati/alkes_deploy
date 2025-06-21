@@ -13,7 +13,7 @@
   "env": {
     "APP_ENV": "production",
     "APP_DEBUG": "false",
-    "APP_URL": "https://alkes-deploy.vercel.app", // sesuaikan
+    "APP_URL": "https://alkes-deploy.vercel.app",
     "APP_KEY": "base64:V1/78zH4SCdE1yWXVJsArulaT5HqO3YbPOTkQijUpKM=",
     "APP_CONFIG_CACHE": "/tmp/config.php",
     "APP_EVENTS_CACHE": "/tmp/events.php",
@@ -29,6 +29,6 @@
     "DB_PORT": "3306",
     "DB_DATABASE": "db_alkes",
     "DB_USERNAME": "root",
-    "DB_PASSWORD": "" // tambahkan jika perlu
+    "DB_PASSWORD": ""
   }
 }
