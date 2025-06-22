@@ -10,14 +10,15 @@
         <!-- jQuery -->
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
-        <!-- DataTables CSS & JS -->
+        <!-- DataTables CSS -->
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
         <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css">
 
+        <!-- DataTables JS -->
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.tailwindcss.min.js"></script>
 
         <script>
@@ -28,13 +29,21 @@
                     stateSave: true,
                     order: [[0, 'desc']],
                     responsive: true,
-                    pagingType: "full_numbers", // Tambahan agar pagination full (first, prev, 1,2,3, next, last)
+                    pagingType: "full_numbers",
                     dom: '<"flex justify-between items-center mb-4"lf>rt<"flex justify-between items-center mt-4"ip>',
                     ajax: {
                         url: '{{ route('user.barangs.index') }}',
                     },
                     language: {
                         url: '/js/id.json'
+                    },
+                    drawCallback: function () {
+                        // Tambahan styling untuk pagination jika CSS gagal di-deploy
+                        $('ul.pagination').addClass('flex items-center space-x-1 justify-center text-sm mt-4');
+                        $('ul.pagination li').addClass('border border-gray-300 rounded');
+                        $('ul.pagination li a').addClass('px-3 py-1 block text-gray-700 hover:bg-gray-200');
+                        $('ul.pagination li.active a').addClass('bg-blue-500 text-white');
+                        $('ul.pagination li.disabled a').addClass('text-gray-400 cursor-not-allowed');
                     },
                     columns: [
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, width: '5%' },
@@ -88,6 +97,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
             @if (isset($stokRendahBarangs) && $stokRendahBarangs->isNotEmpty())
                 <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-lg shadow-md" role="alert">
                     <p class="font-bold">Peringatan Stok Rendah!</p>
@@ -135,7 +145,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {{-- Data akan diisi oleh DataTables --}}
+                            {{-- Diisi otomatis oleh DataTables --}}
                         </tbody>
                     </table>
                 </div>
