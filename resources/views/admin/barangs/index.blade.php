@@ -21,13 +21,28 @@
             $(document).ready(function () {
                 const table = $('#dataTable').DataTable({
                     processing: true,
-                    serverSide: false, // NON-server-side
+                    serverSide: true,
                     responsive: true,
+                    stateSave: true,
+                    order: [[0, 'desc']],
                     pagingType: "full_numbers",
+                    ajax: '{{ route('admin.barangs.index') }}',
+                    language: {
+                        url: '/js/id.json'
+                    },
                     dom: '<"flex justify-between items-center mb-4"lf>rt<"flex justify-between items-center mt-4"ip>',
-                    ajax: {
-                        url: '{{ route('admin.barangs.index') }}',
-                        dataSrc: ''
+                    drawCallback: function () {
+                        $('#loading-spinner').hide();
+                        $('#dataTable_wrapper').removeClass('hidden');
+
+                        const pagination = $('ul.pagination');
+                        if (pagination.length) {
+                            pagination.addClass('flex items-center justify-center mt-6 space-x-2 text-sm');
+                            pagination.find('li').addClass('border border-gray-300 rounded');
+                            pagination.find('a').addClass('px-3 py-1 block text-gray-700 hover:bg-gray-200 transition');
+                            pagination.find('li.active a').addClass('bg-blue-500 text-white');
+                            pagination.find('li.disabled a').addClass('text-gray-400 cursor-not-allowed');
+                        }
                     },
                     columns: [
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -55,22 +70,21 @@
                         { data: 'stok_masuk', render: data => data ?? 0 },
                         { data: 'stok_keluar', render: data => data ?? 0 },
                         { data: 'keterangan' },
-                        { data: 'action', orderable: false, searchable: false, className: 'text-center' },
-                    ],
-                    initComplete: function () {
-                        $('#loading-spinner').hide();
-                        $('#dataTable').show();
-                    }
+                        {
+                            data: 'action',
+                            orderable: false,
+                            searchable: false,
+                            className: 'text-center'
+                        }
+                    ]
                 });
-
-                // Sembunyikan dulu tabel sebelum data load
-                $('#dataTable').hide();
             });
         </script>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
             <div class="mb-10">
                 <a href="{{ route('admin.barangs.create') }}"
                    class="px-4 py-2 font-bold text-white bg-green-500 rounded-lg shadow hover:bg-green-700 transition">
@@ -110,7 +124,7 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 sm:px-20">
                 <div class="text-2xl font-bold text-gray-800 mb-4">Daftar Barang</div>
 
-                <!-- Spinner loading -->
+                <!-- Spinner -->
                 <div id="loading-spinner" class="flex justify-center items-center py-10">
                     <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
                          viewBox="0 0 24 24">
@@ -122,7 +136,7 @@
                     <span class="ml-2 text-gray-500 text-sm">Memuat data barang...</span>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto hidden" id="dataTable_wrapper">
                     <table id="dataTable" class="min-w-full divide-y divide-gray-200">
                         <thead>
                         <tr>
