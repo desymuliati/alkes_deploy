@@ -30,6 +30,10 @@
                     language: {
                         url: '/js/id.json'
                     },
+                    initComplete: function () {
+                        $('#placeholder-body').hide();
+                        $('#data-body').show();
+                    },
                     drawCallback: function () {
                         const pagination = $('ul.pagination');
                         if (pagination.length) {
@@ -140,7 +144,16 @@
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        
+                        <!-- Placeholder Loading -->
+                        <tbody class="bg-white divide-y divide-gray-200" id="placeholder-body">
+                            <tr>
+                                <td colspan="11" class="text-center py-8 text-gray-400">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                        
+                        <!-- DataTables Content -->
+                        <tbody class="bg-white divide-y divide-gray-200" id="data-body" style="display: none;">
                             {{-- Diisi oleh DataTables --}}
                         </tbody>
                     </table>
