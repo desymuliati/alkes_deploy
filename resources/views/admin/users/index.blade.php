@@ -12,20 +12,29 @@
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
         <script>
-            $(document).ready(function () {
-                const table = $('#dataTable').DataTable({
+            $(function () {
+                $('#dataTable').DataTable({
                     processing: true,
                     serverSide: true,
                     stateSave: true,
-                    pagingType: "full_numbers",
                     order: [[0, 'desc']],
-                    ajax: '{{ url()->current() }}',
+                    ajax: '{!! url()->current() !!}',
                     language: {
                         url: '/js/id.json'
                     },
                     drawCallback: function () {
-                        $('#loading-spinner').hide();
-                        $('#dataTable').removeClass('hidden');
+                        const pagination = $('ul.pagination');
+                        if (pagination.length) {
+                            pagination.addClass('flex items-center justify-center mt-6 space-x-2 text-sm');
+                            pagination.find('li').addClass('border border-gray-300 rounded');
+                            pagination.find('a').addClass('px-3 py-1 block text-gray-700 hover:bg-gray-200 transition');
+                            pagination.find('li.active a').addClass('bg-blue-500 text-white');
+                            pagination.find('li.disabled a').addClass('text-gray-400 cursor-not-allowed');
+                        }
+
+                        // Styling dropdown dan search
+                        $('select[name="dataTable_length"]').addClass('border rounded px-2 py-1 mx-2');
+                        $('input[type="search"]').addClass('border rounded px-3 py-1');
                     },
                     columns: [
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -34,7 +43,7 @@
                         { data: 'username', name: 'username' },
                         { data: 'raw_password', name: 'raw_password', orderable: false, searchable: false },
                         { data: 'roles', name: 'roles' },
-                        { data: 'action', name: 'action', orderable: false, searchable: false }
+                        { data: 'action', name: 'action', orderable: false, searchable: false },
                     ]
                 });
             });
@@ -45,7 +54,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="mb-6">
                 <a href="{{ route('admin.users.create') }}"
-                   class="px-4 py-2 font-bold text-white bg-blue-600 rounded shadow hover:bg-blue-800">
+                   class="px-4 py-2 font-bold text-white bg-blue-600 rounded shadow hover:bg-blue-800 transition">
                     + Tambah Pengguna
                 </a>
             </div>
@@ -57,24 +66,11 @@
                 </div>
             @endif
 
-            <div class="bg-white shadow sm:rounded-md overflow-hidden">
-                <div class="px-4 py-5 sm:p-6">
-
-                    <!-- Spinner -->
-                    <div id="loading-spinner" class="flex justify-center py-6">
-                        <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
-                             viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10"
-                                    stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor"
-                                  d="M4 12a8 8 0 018-8v8z"></path>
-                        </svg>
-                        <span class="ml-2 text-gray-600 text-sm">Memuat data pengguna...</span>
-                    </div>
-
+            <div class="overflow-hidden shadow sm:rounded-md bg-white">
+                <div class="px-4 py-5 bg-white sm:p-6">
                     <div class="overflow-x-auto">
-                        <table id="dataTable" class="min-w-full divide-y divide-gray-200 hidden">
-                            <thead class="bg-gray-50">
+                        <table id="dataTable" class="min-w-full divide-y divide-gray-200">
+                            <thead>
                                 <tr>
                                     <th>No</th>
                                     <th>ID</th>
@@ -86,7 +82,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {{-- Diisi DataTables --}}
+                                {{-- Diisi oleh DataTables --}}
                             </tbody>
                         </table>
                     </div>
