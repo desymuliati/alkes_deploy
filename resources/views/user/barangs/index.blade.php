@@ -7,15 +7,11 @@
     </x-slot>
 
     <x-slot name="script">
-        <!-- jQuery -->
+        <!-- jQuery & DataTables -->
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-
-        <!-- DataTables CSS -->
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
         <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css">
-
-        <!-- DataTables JS -->
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
@@ -23,19 +19,22 @@
 
         <script>
             $(document).ready(function () {
-                $('#dataTable').DataTable({
+                const table = $('#dataTable').DataTable({
                     processing: true,
                     serverSide: true,
                     stateSave: true,
-                    order: [[0, 'desc']],
                     responsive: true,
+                    order: [[0, 'desc']],
                     pagingType: "full_numbers",
-                    dom: '<"flex justify-between items-center mb-4"lf>rt<"flex justify-between items-center mt-4"ip>',
                     ajax: '{{ route('user.barangs.index') }}',
                     language: {
-                        url: '/js/id.json' // pastikan file ini tersedia
+                        url: '/js/id.json'
                     },
+                    dom: '<"flex justify-between items-center mb-4"lf>rt<"flex justify-between items-center mt-4"ip>',
                     drawCallback: function () {
+                        $('#loading-spinner').hide();
+                        $('#dataTable_wrapper').removeClass('hidden');
+
                         const pagination = $('ul.pagination');
                         if (pagination.length) {
                             pagination.addClass('flex items-center justify-center mt-6 space-x-2 text-sm');
@@ -110,10 +109,21 @@
             @endif
 
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 sm:px-20">
-                <div class="text-2xl font-bold text-gray-800 mb-4">
-                    Daftar Barang
+                <div class="text-2xl font-bold text-gray-800 mb-4">Daftar Barang</div>
+
+                <!-- Spinner loading -->
+                <div id="loading-spinner" class="flex justify-center items-center py-10">
+                    <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                         viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    <span class="ml-2 text-sm text-gray-600">Memuat data barang...</span>
                 </div>
-                <div class="overflow-x-auto">
+
+                <div class="overflow-x-auto hidden" id="dataTable_wrapper">
                     <table id="dataTable" class="min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>
