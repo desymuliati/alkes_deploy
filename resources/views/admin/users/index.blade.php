@@ -26,15 +26,29 @@
                         const pagination = $('ul.pagination');
                         if (pagination.length) {
                             pagination.addClass('flex items-center justify-center mt-6 space-x-2 text-sm');
-                            pagination.find('li').addClass('border border-gray-300 rounded');
-                            pagination.find('a').addClass('px-3 py-1 block text-gray-700 hover:bg-gray-200 transition');
-                            pagination.find('li.active a').addClass('bg-blue-500 text-white');
-                            pagination.find('li.disabled a').addClass('text-gray-400 cursor-not-allowed');
+                            pagination.find('li').each(function () {
+                                const li = $(this);
+                                const a = li.find('a');
+
+                                li.addClass('rounded shadow');
+
+                                if (li.hasClass('active')) {
+                                    a.addClass('bg-green-500 text-white font-semibold px-3 py-1');
+                                } else if (li.hasClass('disabled')) {
+                                    a.addClass('bg-gray-300 text-gray-500 cursor-not-allowed px-3 py-1');
+                                } else {
+                                    a.addClass('bg-yellow-100 hover:bg-yellow-300 text-gray-800 px-3 py-1 transition');
+                                }
+                            });
                         }
 
-                        // Styling dropdown dan search
-                        $('select[name="dataTable_length"]').addClass('border rounded px-2 py-1 mx-2');
-                        $('input[type="search"]').addClass('border rounded px-3 py-1');
+                        // Styling dropdown dan search input
+                        $('div.dataTables_filter input')
+                            .addClass('border border-gray-300 rounded-md px-3 py-2 text-sm ml-2')
+                            .attr('placeholder', 'Cari pengguna...');
+
+                        $('div.dataTables_length select')
+                            .addClass('border border-gray-300 rounded-md px-2 py-2 text-sm');
                     },
                     columns: [
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
