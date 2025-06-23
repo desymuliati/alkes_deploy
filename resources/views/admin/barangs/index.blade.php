@@ -19,30 +19,15 @@
 
         <script>
             $(document).ready(function () {
-                $('#dataTable').DataTable({
+                const table = $('#dataTable').DataTable({
                     processing: true,
-                    serverSide: true,
+                    serverSide: false, // NON-server-side
                     responsive: true,
-                    stateSave: true,
-                    order: [[0, 'desc']],
                     pagingType: "full_numbers",
-                    ajax: '{{ route('admin.barangs.index') }}',
-                    language: {
-                        url: '/js/id.json'
-                    },
-                    initComplete: function () {
-                        $('#placeholder-body').hide();
-                        $('#data-body').show();
-                    },
-                    drawCallback: function () {
-                        const pagination = $('ul.pagination');
-                        if (pagination.length) {
-                            pagination.addClass('flex items-center justify-center mt-6 space-x-2 text-sm');
-                            pagination.find('li').addClass('border border-gray-300 rounded');
-                            pagination.find('a').addClass('px-3 py-1 block text-gray-700 hover:bg-gray-200 transition');
-                            pagination.find('li.active a').addClass('bg-blue-500 text-white');
-                            pagination.find('li.disabled a').addClass('text-gray-400 cursor-not-allowed');
-                        }
+                    dom: '<"flex justify-between items-center mb-4"lf>rt<"flex justify-between items-center mt-4"ip>',
+                    ajax: {
+                        url: '{{ route('admin.barangs.index') }}',
+                        dataSrc: ''
                     },
                     columns: [
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -51,44 +36,41 @@
                         { data: 'satuan', name: 'satuan' },
                         {
                             data: 'jumlah_stok',
-                            name: 'jumlah_stok',
                             render: function (data, type, row) {
-                                return type === 'display' ? row.formatted_stok : data;
+                                return row.formatted_stok;
                             }
                         },
                         {
                             data: 'harga',
-                            name: 'harga',
                             render: function (data, type, row) {
-                                return type === 'display' ? row.formatted_harga : data;
+                                return row.formatted_harga;
                             }
                         },
                         {
                             data: 'expired',
-                            name: 'expired',
                             render: function (data, type, row) {
-                                return type === 'display' ? row.formatted_expired : data;
+                                return row.formatted_expired;
                             }
                         },
-                        { data: 'stok_masuk', name: 'stok_masuk', render: data => data ?? 0 },
-                        { data: 'stok_keluar', name: 'stok_keluar', render: data => data ?? 0 },
-                        { data: 'keterangan', name: 'keterangan' },
-                        {
-                            data: 'action',
-                            name: 'action',
-                            orderable: false,
-                            searchable: false,
-                            className: 'text-center'
-                        }
-                    ]
+                        { data: 'stok_masuk', render: data => data ?? 0 },
+                        { data: 'stok_keluar', render: data => data ?? 0 },
+                        { data: 'keterangan' },
+                        { data: 'action', orderable: false, searchable: false, className: 'text-center' },
+                    ],
+                    initComplete: function () {
+                        $('#loading-spinner').hide();
+                        $('#dataTable').show();
+                    }
                 });
+
+                // Sembunyikan dulu tabel sebelum data load
+                $('#dataTable').hide();
             });
         </script>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
             <div class="mb-10">
                 <a href="{{ route('admin.barangs.create') }}"
                    class="px-4 py-2 font-bold text-white bg-green-500 rounded-lg shadow hover:bg-green-700 transition">
@@ -127,34 +109,38 @@
 
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 sm:px-20">
                 <div class="text-2xl font-bold text-gray-800 mb-4">Daftar Barang</div>
+
+                <!-- Spinner loading -->
+                <div id="loading-spinner" class="flex justify-center items-center py-10">
+                    <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                         viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    <span class="ml-2 text-gray-500 text-sm">Memuat data barang...</span>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table id="dataTable" class="min-w-full divide-y divide-gray-200">
                         <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nomor Produk Katalog</th>
-                                <th>Nama Produk</th>
-                                <th>Satuan</th>
-                                <th>Jumlah Stok</th>
-                                <th>Harga</th>
-                                <th>Expired</th>
-                                <th>Masuk</th>
-                                <th>Keluar</th>
-                                <th>Keterangan</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
+                        <tr>
+                            <th>#</th>
+                            <th>Nomor Produk Katalog</th>
+                            <th>Nama Produk</th>
+                            <th>Satuan</th>
+                            <th>Jumlah Stok</th>
+                            <th>Harga</th>
+                            <th>Expired</th>
+                            <th>Masuk</th>
+                            <th>Keluar</th>
+                            <th>Keterangan</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
                         </thead>
-                        
-                        <!-- Placeholder Loading -->
-                        <tbody class="bg-white divide-y divide-gray-200" id="placeholder-body">
-                            <tr>
-                                <td colspan="11" class="text-center py-8 text-gray-400">Memuat data...</td>
-                            </tr>
-                        </tbody>
-                        
-                        <!-- DataTables Content -->
-                        <tbody class="bg-white divide-y divide-gray-200" id="data-body" style="display: none;">
-                            {{-- Diisi oleh DataTables --}}
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        {{-- Diisi oleh DataTables --}}
                         </tbody>
                     </table>
                 </div>
