@@ -7,18 +7,14 @@
     </x-slot>
 
     <x-slot name="script">
-        <!-- DataTables + Tailwind CSS -->
+        <!-- DataTables + Tailwind -->
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css">
-
-        <!-- jQuery + DataTables -->
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
 
         <script>
             $(function () {
-                $('#dataTable').DataTable({
+                const table = $('#dataTable').DataTable({
                     processing: true,
                     serverSide: true,
                     stateSave: true,
@@ -28,26 +24,30 @@
                         url: '/js/id.json'
                     },
                     drawCallback: function () {
-                        // Styling pagination
+                        // Ambil pagination dan pindahkan ke div custom
                         const paginate = $('.dataTables_paginate');
-                        paginate.addClass('flex items-center justify-center gap-2 mt-6');
+                        $('#custom-pagination').html(paginate.html());
 
-                        paginate.find('a').each(function () {
-                            const el = $(this);
-                            const text = el.text().trim();
+                        // Tambah styling Tailwind ke pagination
+                        $('#custom-pagination ul.pagination')
+                            .addClass('flex justify-center space-x-2 mt-6 text-sm');
 
-                            el.addClass('px-3 py-1 border rounded font-medium transition');
+                        $('#custom-pagination ul.pagination li.paginate_button').each(function () {
+                            const li = $(this);
+                            const a = li.find('a');
 
-                            if (el.hasClass('current')) {
-                                el.addClass('bg-green-500 text-white');
-                            } else if (text === 'Previous' || text === 'Next') {
-                                el.addClass('bg-gray-300 text-gray-600 cursor-not-allowed');
+                            a.addClass('px-3 py-1 border rounded transition');
+
+                            if (li.hasClass('active')) {
+                                a.addClass('bg-blue-600 text-white');
+                            } else if (li.hasClass('disabled')) {
+                                a.addClass('bg-gray-200 text-gray-500 cursor-not-allowed');
                             } else {
-                                el.addClass('bg-yellow-100 text-gray-700 hover:bg-yellow-300');
+                                a.addClass('bg-yellow-100 text-gray-700 hover:bg-yellow-300');
                             }
                         });
 
-                        // Styling search dan length
+                        // Style search dan length
                         $('div.dataTables_filter input')
                             .addClass('border border-gray-300 rounded px-3 py-2 text-sm ml-2')
                             .attr('placeholder', 'Cari pengguna...');
@@ -71,7 +71,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="mb-6">
+            <div class="mb-6 flex justify-between items-center">
                 <a href="{{ route('admin.users.create') }}"
                    class="px-4 py-2 font-bold text-white bg-blue-600 rounded shadow hover:bg-blue-800 transition">
                     + Tambah Pengguna
@@ -107,6 +107,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ✅ Pagination di luar script -->
+            <div id="custom-pagination" class="mt-6 flex justify-end"></div>
         </div>
     </div>
 
