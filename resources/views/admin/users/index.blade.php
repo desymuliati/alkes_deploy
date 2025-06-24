@@ -7,13 +7,8 @@
     </x-slot>
 
     <x-slot name="script">
-        <!-- DataTables + Tailwind -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-        <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
         <script>
-            $(function () {
+            $(document).ready(function () {
                 const table = $('#dataTable').DataTable({
                     processing: true,
                     serverSide: true,
@@ -24,36 +19,27 @@
                         url: '/js/id.json'
                     },
                     drawCallback: function () {
-                        // Ambil pagination dan pindahkan ke div custom
-                        const paginate = $('.dataTables_paginate');
-                        $('#custom-pagination').html(paginate.html());
+                        // Pindahkan pagination ke tempat custom
+                        let pagination = $('.dataTables_paginate');
+                        if (pagination.length) {
+                            $('#custom-pagination').html(pagination);
+                        }
 
-                        // Tambah styling Tailwind ke pagination
-                        $('#custom-pagination ul.pagination')
-                            .addClass('flex justify-center space-x-2 mt-6 text-sm');
+                        // Tambahkan styling Tailwind ke pagination
+                        $('#custom-pagination .paginate_button').each(function () {
+                            const btn = $(this).find('a');
+                            btn.removeClass().addClass('px-3 py-1 rounded border text-sm transition');
 
-                        $('#custom-pagination ul.pagination li.paginate_button').each(function () {
-                            const li = $(this);
-                            const a = li.find('a');
-
-                            a.addClass('px-3 py-1 border rounded transition');
-
-                            if (li.hasClass('active')) {
-                                a.addClass('bg-blue-600 text-white');
-                            } else if (li.hasClass('disabled')) {
-                                a.addClass('bg-gray-200 text-gray-500 cursor-not-allowed');
+                            if ($(this).hasClass('current')) {
+                                btn.addClass('bg-blue-600 text-white');
                             } else {
-                                a.addClass('bg-yellow-100 text-gray-700 hover:bg-yellow-300');
+                                btn.addClass('bg-yellow-100 text-gray-700 hover:bg-yellow-300');
                             }
                         });
 
-                        // Style search dan length
-                        $('div.dataTables_filter input')
-                            .addClass('border border-gray-300 rounded px-3 py-2 text-sm ml-2')
-                            .attr('placeholder', 'Cari pengguna...');
-
-                        $('div.dataTables_length select')
-                            .addClass('border border-gray-300 rounded px-2 py-1 text-sm');
+                        // Style input dan select
+                        $('div.dataTables_filter input').addClass('border border-gray-300 rounded px-3 py-2 text-sm ml-2').attr('placeholder', 'Cari pengguna...');
+                        $('div.dataTables_length select').addClass('border border-gray-300 rounded px-2 py-1 text-sm');
                     },
                     columns: [
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -101,14 +87,14 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {{-- Diisi oleh DataTables --}}
+                                {{-- Diisi otomatis oleh DataTables --}}
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- ✅ Pagination di luar script -->
+            {{-- ⬇️ Pagination di luar script --}}
             <div id="custom-pagination" class="mt-6 flex justify-end"></div>
         </div>
     </div>

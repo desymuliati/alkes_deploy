@@ -8,15 +8,21 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
+    {{-- Font & Tailwind --}}
     <link rel="stylesheet" href="https://fonts.bunny.net/css2?family=Nunito:wght@400;600;700&display=swap">
 
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    {{-- Ganti dengan Tailwind-compatible DataTables --}}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css" />
+
+    {{-- Tambahan CSS eksternal --}}
     <link rel="stylesheet" href="https://unpkg.com/flowbite@1.4.7/dist/flowbite.min.css" />
     <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
+    {{-- Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    {{-- SweetAlert --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
     @if (session()->has('error'))
         <script>
@@ -34,74 +40,44 @@
                 icon: 'success',
                 title: 'Berhasil',
                 text: '{{ session('success') }}',
-                timer: 3000, // Optional: auto-close the success message
+                timer: 3000,
                 showConfirmButton: false
             })
         </script>
     @endif
 
+    {{-- Flowbite --}}
     <script src="https://unpkg.com/flowbite@1.4.7/dist/flowbite.js"></script>
 
+    {{-- Custom styling untuk DataTables --}}
     <style>
-        /* Tetap pertahankan gaya kustom DataTables Anda */
-        .dataTables_wrapper select,
-        .dataTables_wrapper .dataTables_filter input {
-            color: #4a5568;
-            padding-left: 1rem;
-            padding-right: 1rem;
-            padding-top: .5rem;
-            padding-bottom: .5rem;
-            line-height: 1.25;
-            border-width: 2px;
-            border-radius: .25rem;
-            border-color: #edf2f7;
-            background-color: #edf2f7;
+        .dataTables_wrapper .dataTables_paginate {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
         }
-        .dataTables_wrapper select {
-            padding-right: 1.5rem;
-        }
-        table.dataTable.hover tbody tr:hover,
-        table.dataTable.display tbody tr:hover {
-            background-color: #ebf4ff;
-        }
+
         .dataTables_wrapper .dataTables_paginate .paginate_button {
-            font-weight: 700;
-            border-radius: .25rem;
-            border: 1px solid transparent;
+            padding: 6px 12px;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.3s;
         }
+
         .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            color: #fff !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .1), 0 1px 2px 0 rgba(0, 0, 0, .06);
-            font-weight: 700;
-            border-radius: .25rem;
-            background: #008652 !important;
-            border: 1px solid transparent;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            color: #fff !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .1), 0 1px 2px 0 rgba(0, 0, 0, .06);
-            font-weight: 700;
-            border-radius: .25rem;
-            background: #008652 !important;
-            border: 1px solid transparent;
-        }
-        table.dataTable.no-footer {
-            border-bottom: 1px solid #e2e8f0;
-            margin-top: 0.75em;
-            margin-bottom: 0.75em;
-        }
-        table.dataTable.dtr-inline.collapsed>tbody>tr>td:first-child:before,
-        table.dataTable.dtr-inline.collapsed>tbody>tr>th:first-child:before {
             background-color: #008652 !important;
+            color: white !important;
         }
-        table.dataTable tr th.select-checkbox.selected::after {
-            content: "✔";
-            margin-top: -11px;
-            margin-left: -4px;
-            text-align: center;
-            text-shadow: rgb(176, 190, 217) 1px 1px, rgb(176, 190, 217) -1px -1px, rgb(176, 190, 217) 1px -1px, rgb(176, 190, 217) -1px 1px;
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background-color: #00663f !important;
+            color: white !important;
         }
     </style>
+
     @livewireStyles
 </head>
 
@@ -127,26 +103,28 @@
 
     @livewireScripts
 
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.0.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-
+    {{-- jQuery & DataTables --}}
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
 
+    {{-- Plugin tambahan --}}
+    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/datetime-moment.js"></script>
-
     <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/rowreorder/1.2.8/js/dataTables.rowReorder.min.js"></script>
     <script src="https://gyrocode.github.io/jquery-datatables-checkboxes/1.2.10/js/dataTables.checkboxes.min.js"></script>
     <script src="https://cdn.datatables.net/select/1.2.1/js/dataTables.select.min.js"></script>
 
+    {{-- CKEditor --}}
     <script src="//cdn.ckeditor.com/4.14.1/standard/ckeditor.js"></script>
+
+    {{-- TW Elements --}}
     <script src="https://cdn.jsdelivr.net/npm/tw-elements/dist/js/index.min.js"></script>
 
-    {{-- Ini akan menjalankan skrip DataTables spesifik untuk halaman yang memanggilnya --}}
+    {{-- Script halaman spesifik --}}
     {{ $script ?? '' }}
     {{ $modal ?? '' }}
-
     @stack('scripts')
 
 </body>
