@@ -100,7 +100,7 @@ class BarangController extends Controller
             return Barang::where(function($query) {
                 $query->where(function($q) {
                     $q->where('satuan', 'Galon')
-                      ->where('jumlah_stok', '<=', 1); // Changed to <= 1
+                      ->where('jumlah_stok', '<=', 1);
                 })->orWhere(function($q) {
                     $q->where('satuan', '<>', 'Galon')
                       ->where('jumlah_stok', '<', 100);
@@ -112,7 +112,7 @@ class BarangController extends Controller
         $stokRendahBarangs = Barang::where(function($query) {
             $query->where(function($q) {
                 $q->where('satuan', 'Galon')
-                  ->where('jumlah_stok', '<=', 1); // Changed to <= 1
+                  ->where('jumlah_stok', '<=', 1);
             })->orWhere(function($q) {
                 $q->where('satuan', '<>', 'Galon')
                   ->where('jumlah_stok', '<', 100);
@@ -124,18 +124,25 @@ class BarangController extends Controller
             ->where('expired', '<', Carbon::now())
             ->get();
 
+        // Daftar barang mendekati kadaluarsa - THIS IS THE NEW PART
+        $mendekatiKadaluarsaBarangs = Barang::whereNotNull('expired')
+            ->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])
+            ->get();
+
 
         return view('admin.barangs.index', compact(
             'kadaluarsaCount',
             'mendekatiKadaluarsaCount',
             'stokRendahCount',
             'stokRendahBarangs',
-            'kadaluarsaBarangs' // Pass the list of expired items to the view
+            'kadaluarsaBarangs',
+            'mendekatiKadaluarsaBarangs' // Now passing the list to the view
         ));
     }
 
     protected function refreshCounts()
     {
+        // ... (this method remains the same as it correctly calculates counts)
         Cache::forget('kadaluarsaCount');
         Cache::forget('mendekatiKadaluarsaCount');
         Cache::forget('stokRendahCount');
@@ -154,7 +161,7 @@ class BarangController extends Controller
             return Barang::where(function($query) {
                 $query->where(function($q) {
                     $q->where('satuan', 'Galon')
-                      ->where('jumlah_stok', '<=', 1); // Changed to <= 1
+                      ->where('jumlah_stok', '<=', 1);
                 })->orWhere(function($q) {
                     $q->where('satuan', '<>', 'Galon')
                       ->where('jumlah_stok', '<', 100);
