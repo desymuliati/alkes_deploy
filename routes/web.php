@@ -8,7 +8,7 @@ use App\Http\Controllers\Admin\BarangController as AdminBarangController;
 use App\Http\Controllers\User\BarangController as UserBarangController;
 use App\Http\Controllers\Admin\PenjualanController as AdminPenjualanController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
-use App\Http\Controllers\Admin\StockSettingController as AdminStockSettingController;
+use App\Http\Controllers\Admin\StockSettingController as AdminStockSettingController; // Sudah benar
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Front\LandingController;
 

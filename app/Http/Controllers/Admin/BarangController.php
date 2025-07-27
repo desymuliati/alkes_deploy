@@ -10,12 +10,12 @@ use Yajra\DataTables\DataTables;
 use App\Http\Requests\BarangRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Config; // <--- DITAMBAHKAN: Untuk mengakses konfigurasi
+use Illuminate\Support\Facades\Config;
 
 class BarangController extends Controller
 {
     /**
-     * DITAMBAHKAN: Helper untuk mendapatkan ambang batas stok dinamis per barang.
+     * Helper untuk mendapatkan ambang batas stok dinamis per barang.
      * Prioritas:
      * 1. product_thresholds (berdasarkan slug produk)
      * 2. unit_thresholds (berdasarkan satuan produk)
@@ -27,16 +27,12 @@ class BarangController extends Controller
     private function getStockThreshold($barang)
     {
         // Ambil semua pengaturan dari file konfigurasi stock_threshold.php
-        $settings = Config::get('stock_threshold');
-
-        // Pastikan $settings tidak null, jika null, gunakan array kosong sebagai fallback
-        if (is_null($settings)) {
-            $settings = [
-                'default_threshold' => 100,
-                'unit_thresholds' => [],
-                'product_thresholds' => [],
-            ];
-        }
+        // Pastikan untuk memberikan array kosong sebagai default jika file config tidak ada
+        $settings = Config::get('stock_threshold', [ // Ini sudah lebih baik dari sebelumnya
+            'default_threshold' => 100,
+            'unit_thresholds' => [],
+            'product_thresholds' => [],
+        ]);
 
         // 1. Cek ambang batas spesifik per produk berdasarkan slug
         if (isset($settings['product_thresholds'][$barang->slug])) {
@@ -44,7 +40,8 @@ class BarangController extends Controller
         }
 
         // 2. Cek ambang batas berdasarkan satuan produk (case-insensitive)
-        if (isset($settings['unit_thresholds'][strtolower($barang->satuan)])) {
+        // Pastikan 'unit_thresholds' ada dan bukan null
+        if (isset($settings['unit_thresholds']) && isset($settings['unit_thresholds'][strtolower($barang->satuan)])) {
             return (int) $settings['unit_thresholds'][strtolower($barang->satuan)];
         }
 
@@ -55,7 +52,10 @@ class BarangController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok');
+            // Untuk DataTables, kita perlu semua kolom yang relevan untuk ditampilkan
+            // dan juga 'satuan' dan 'slug' untuk perhitungan formatted_stok
+            // Perbaikan: Pastikan 'satuan' dan 'slug' juga diambil di sini
+            $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok', 'barangs.satuan', 'barangs.slug'); // DITAMBAHKAN: 'satuan' dan 'slug'
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -77,7 +77,7 @@ class BarangController extends Controller
                     return '-';
                 })
                 ->addColumn('formatted_stok', function ($barang) {
-                    // DIUBAH: Menggunakan helper getStockThreshold untuk ambang batas dinamis
+                    // Menggunakan helper getStockThreshold untuk ambang batas dinamis
                     $threshold = $this->getStockThreshold($barang);
                     return $barang->jumlah_stok < $threshold
                         ? '<span class="font-bold text-red-600">' . $barang->jumlah_stok . '</span>'
@@ -110,20 +110,21 @@ class BarangController extends Controller
                 ->make(true);
         }
 
-        // DIUBAH: Logika untuk menghitung barang stok rendah agar dinamis
-        // Kita perlu mengambil semua barang dan memfilter secara manual
-        // karena ambang batas stok bisa berbeda per barang.
-        $allBarangs = Barang::all();
+        // Hitung daftar dan jumlah untuk dashboard
+        // DIUBAH: Hanya ambil kolom yang relevan untuk perhitungan stok rendah
+        // Ini mengurangi jumlah data yang ditarik dari DB secara signifikan
+        $allBarangsForDashboard = Barang::select('id', 'nama_produk', 'jumlah_stok', 'satuan', 'slug')->get(); // Sudah benar
 
-        $stokRendahBarangs = $allBarangs->filter(function ($barang) {
+        $stokRendahBarangs = $allBarangsForDashboard->filter(function ($barang) {
             return $barang->jumlah_stok < $this->getStockThreshold($barang);
         });
 
         // Hitung jumlah barang stok rendah
         $stokRendahCount = $stokRendahBarangs->count();
 
-        // Bagian kadaluarsa tetap sama karena tidak terkait dengan pengaturan stok baru
-        $kadaluarsaBarangs = Barang::whereNotNull('expired')
+        // DIUBAH: Untuk kadaluarsa, juga hanya ambil kolom yang relevan
+        $kadaluarsaBarangs = Barang::select('id', 'nama_produk', 'expired') // Sudah benar
+            ->whereNotNull('expired')
             ->where('expired', '<', Carbon::now()->addMonths(3))
             ->get();
 
