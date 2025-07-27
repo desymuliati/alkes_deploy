@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Cache;
 
 class BarangController extends Controller
 {
-    // Fungsi utama index
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -83,7 +82,7 @@ class BarangController extends Controller
                 ->make(true);
         }
 
-        // Ambil count dari cache, jika belum ada akan dihit dan disimpan
+        // Hitung statistik dari cache atau hitung ulang
         $kadaluarsaCount = Cache::remember('kadaluarsaCount', 300, function () {
             return Barang::whereNotNull('expired')
                 ->where('expired', '<', Carbon::now())
@@ -96,12 +95,29 @@ class BarangController extends Controller
                 ->count();
         });
 
+        // Hitung stok rendah sesuai kondisi: galon <1, selain galon <100
         $stokRendahCount = Cache::remember('stokRendahCount', 300, function () {
-            return Barang::where('jumlah_stok', '<', 100)->count();
+            return Barang::where(function($query) {
+                $query->where(function($q) {
+                    $q->where('satuan', 'Galon')
+                      ->where('jumlah_stok', '<', 1);
+                })->orWhere(function($q) {
+                    $q->where('satuan', '<>', 'Galon')
+                      ->where('jumlah_stok', '<', 100);
+                });
+            })->count();
         });
 
-        // Ambil daftar barang stok rendah
-        $stokRendahBarangs = Barang::where('jumlah_stok', '<', 100)->get();
+        // Ambil daftar barang stok rendah sesuai kondisi
+        $stokRendahBarangs = Barang::where(function($query) {
+            $query->where(function($q) {
+                $q->where('satuan', 'Galon')
+                  ->where('jumlah_stok', '<', 1);
+            })->orWhere(function($q) {
+                $q->where('satuan', '<>', 'Galon')
+                  ->where('jumlah_stok', '<', 100);
+            });
+        })->get();
 
         return view('admin.barangs.index', compact(
             'kadaluarsaCount',
@@ -111,14 +127,13 @@ class BarangController extends Controller
         ));
     }
 
-    // Saat barang ditambah, diupdate, atau dihapus, cache akan di-refresh
+    // Refresh cache statistik
     protected function refreshCounts()
     {
         Cache::forget('kadaluarsaCount');
         Cache::forget('mendekatiKadaluarsaCount');
         Cache::forget('stokRendahCount');
 
-        // Hitung dan simpan kembali
         Cache::remember('kadaluarsaCount', 300, function () {
             return Barang::whereNotNull('expired')
                 ->where('expired', '<', Carbon::now())
@@ -130,7 +145,15 @@ class BarangController extends Controller
                 ->count();
         });
         Cache::remember('stokRendahCount', 300, function () {
-            return Barang::where('jumlah_stok', '<', 100)->count();
+            return Barang::where(function($query) {
+                $query->where(function($q) {
+                    $q->where('satuan', 'Galon')
+                      ->where('jumlah_stok', '<', 1);
+                })->orWhere(function($q) {
+                    $q->where('satuan', '<>', 'Galon')
+                      ->where('jumlah_stok', '<', 100);
+                });
+            })->count();
         });
     }
 
@@ -165,7 +188,7 @@ class BarangController extends Controller
         // Simpan data
         $barang = Barang::create($data);
 
-        // Refresh cache count setelah data baru disimpan
+        // Refresh cache statistik
         $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil ditambahkan!');
@@ -216,7 +239,7 @@ class BarangController extends Controller
         // Update data
         $barang->update($data);
 
-        // Refresh cache count setelah update
+        // Refresh cache statistik
         $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil diperbarui!');
@@ -226,7 +249,7 @@ class BarangController extends Controller
     {
         $barang->delete();
 
-        // Refresh cache count setelah delete
+        // Refresh cache statistik
         $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil dihapus.');
