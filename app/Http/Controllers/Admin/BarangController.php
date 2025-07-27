@@ -100,10 +100,14 @@ class BarangController extends Controller
             return Barang::where('jumlah_stok', '<', 100)->count();
         });
 
+        // Ambil daftar barang stok rendah
+        $stokRendahBarangs = Barang::where('jumlah_stok', '<', 100)->get();
+
         return view('admin.barangs.index', compact(
             'kadaluarsaCount',
             'mendekatiKadaluarsaCount',
-            'stokRendahCount'
+            'stokRendahCount',
+            'stokRendahBarangs'
         ));
     }
 
