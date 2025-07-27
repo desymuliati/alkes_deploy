@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\BarangController as AdminBarangController;
 use App\Http\Controllers\User\BarangController as UserBarangController;
 use App\Http\Controllers\Admin\PenjualanController as AdminPenjualanController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
+use App\Http\Controllers\Admin\StockSettingController as AdminStockSettingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Front\LandingController;
 
@@ -32,10 +33,15 @@ Route::prefix('admin')->name('admin.')->middleware([
     Route::resource('users', AdminUserController::class);
     Route::resource('barangs', AdminBarangController::class);
     Route::resource('penjualans', AdminPenjualanController::class);
+
     // Rute laporan perlu didefinisikan sebelum resource agar tidak tertimpa
     Route::get('/laporans/get-barang-by-penjualan/{penjualanId}', [AdminLaporanController::class, 'getBarangByPenjualan'])->name('laporans.getBarangByPenjualan');
     Route::get('/laporans/export', [AdminLaporanController::class, 'export'])->name('laporans.export');
     Route::resource('laporans', AdminLaporanController::class);
+
+    // Route untuk halaman pengaturan stok (Path URL sudah disesuaikan)
+    Route::get('/stock-settings', [AdminStockSettingController::class, 'index'])->name('stock_settings.index');
+    Route::post('/stock-settings', [AdminStockSettingController::class, 'update'])->name('stock_settings.update');
 });
 
 // --- Halaman User (butuh login dan role USER) ---

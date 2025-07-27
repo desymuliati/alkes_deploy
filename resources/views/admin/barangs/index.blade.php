@@ -92,6 +92,23 @@
                 </a>
             </div>
 
+            {{-- Statistik Count --}}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                <div class="bg-yellow-100 p-4 rounded-lg shadow text-center">
+                    <div class="text-xl font-bold text-yellow-700">{{ $stokRendahCount ?? 0 }}</div>
+                    <div class="text-sm text-yellow-800">Barang Stok Rendah</div>
+                </div>
+                <div class="bg-red-100 p-4 rounded-lg shadow text-center">
+                    <div class="text-xl font-bold text-red-700">{{ $kadaluarsaCount ?? 0 }}</div>
+                    <div class="text-sm text-red-800">Barang Kadaluarsa</div>
+                </div>
+                <div class="bg-orange-100 p-4 rounded-lg shadow text-center">
+                    <div class="text-xl font-bold text-orange-700">{{ $mendekatiKadaluarsaCount ?? 0 }}</div>
+                    <div class="text-sm text-orange-800">Mendekati Kadaluarsa</div>
+                </div>
+            </div>
+
+            {{-- Notifikasi jika ada --}}
             @if (session('success'))
                 <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
                     <strong class="font-bold">Sukses!</strong>

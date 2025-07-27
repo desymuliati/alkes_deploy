@@ -7,7 +7,6 @@
     </x-slot>
 
     <x-slot name="script">
-        <!-- jQuery & DataTables -->
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
         <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
@@ -81,6 +80,21 @@
         </script>
     </x-slot>
 
+    <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-yellow-100 p-4 rounded-lg shadow">
+            <span class="block text-sm text-yellow-700 font-semibold">Stok Rendah</span>
+            <span class="text-xl font-bold text-yellow-700">{{ $stokRendahCount }}</span>
+        </div>
+        <div class="bg-orange-100 p-4 rounded-lg shadow">
+            <span class="block text-sm text-orange-700 font-semibold">Mendekati Kadaluarsa</span>
+            <span class="text-xl font-bold text-orange-700">{{ $mendekatiKadaluarsaCount }}</span>
+        </div>
+        <div class="bg-red-100 p-4 rounded-lg shadow">
+            <span class="block text-sm text-red-700 font-semibold">Sudah Kadaluarsa</span>
+            <span class="text-xl font-bold text-red-700">{{ $kadaluarsaCount }}</span>
+        </div>
+    </div>
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
@@ -111,10 +125,9 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 sm:px-20">
                 <div class="text-2xl font-bold text-gray-800 mb-4">Daftar Barang</div>
 
-                <!-- Spinner loading -->
                 <div id="loading-spinner" class="flex justify-center items-center py-10">
                     <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
-                         viewBox="0 0 24 24">
+                        viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10"
                                 stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor"

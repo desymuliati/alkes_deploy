@@ -10,19 +10,51 @@ use Yajra\DataTables\DataTables;
 use App\Http\Requests\BarangRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config; // <--- DITAMBAHKAN: Untuk mengakses konfigurasi
 
 class BarangController extends Controller
 {
     /**
-     * Menampilkan daftar semua barang dengan perhitungan stok real-time dari database.
+     * DITAMBAHKAN: Helper untuk mendapatkan ambang batas stok dinamis per barang.
+     * Prioritas:
+     * 1. product_thresholds (berdasarkan slug produk)
+     * 2. unit_thresholds (berdasarkan satuan produk)
+     * 3. default_threshold
+     *
+     * @param \App\Models\Barang $barang
+     * @return int
      */
+    private function getStockThreshold($barang)
+    {
+        // Ambil semua pengaturan dari file konfigurasi stock_threshold.php
+        $settings = Config::get('stock_threshold');
+
+        // Pastikan $settings tidak null, jika null, gunakan array kosong sebagai fallback
+        if (is_null($settings)) {
+            $settings = [
+                'default_threshold' => 100,
+                'unit_thresholds' => [],
+                'product_thresholds' => [],
+            ];
+        }
+
+        // 1. Cek ambang batas spesifik per produk berdasarkan slug
+        if (isset($settings['product_thresholds'][$barang->slug])) {
+            return (int) $settings['product_thresholds'][$barang->slug];
+        }
+
+        // 2. Cek ambang batas berdasarkan satuan produk (case-insensitive)
+        if (isset($settings['unit_thresholds'][strtolower($barang->satuan)])) {
+            return (int) $settings['unit_thresholds'][strtolower($barang->satuan)];
+        }
+
+        // 3. Gunakan ambang batas default
+        return (int) ($settings['default_threshold'] ?? 100);
+    }
+
     public function index(Request $request)
     {
-        $currentYear = Carbon::now()->year;
-
         if ($request->ajax()) {
-            // Ambil data langsung dari kolom stok_masuk, stok_keluar, dan jumlah_stok
-            // yang sudah diupdate oleh controller Laporan dan Penjualan, serta dari update manual di BarangController.
             $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok');
 
             return DataTables::of($query)
@@ -30,14 +62,14 @@ class BarangController extends Controller
                 ->addColumn('formatted_harga', function ($barang) {
                     return 'Rp ' . number_format($barang->harga, 0, ',', '.');
                 })
-                ->addColumn('formatted_expired', function ($barang) use ($currentYear) {
+                ->addColumn('formatted_expired', function ($barang) {
                     if ($barang->expired) {
                         $expiredDate = Carbon::parse($barang->expired);
                         $formattedDate = $expiredDate->format('d F Y');
 
                         if ($expiredDate->isPast()) {
                             return '<span class="font-bold text-red-600">' . $formattedDate . ' (Kadaluarsa)</span>';
-                        } elseif ($expiredDate->year === $currentYear && $expiredDate->isFuture()) {
+                        } elseif ($expiredDate->between(Carbon::now(), Carbon::now()->addMonths(3))) {
                             return '<span class="font-bold text-orange-500">' . $formattedDate . ' (Mendekati Kadaluarsa)</span>';
                         }
                         return $formattedDate;
@@ -45,17 +77,16 @@ class BarangController extends Controller
                     return '-';
                 })
                 ->addColumn('formatted_stok', function ($barang) {
-                    // Menggunakan jumlah_stok yang sudah terupdate di database
-                    return $barang->jumlah_stok < 100
+                    // DIUBAH: Menggunakan helper getStockThreshold untuk ambang batas dinamis
+                    $threshold = $this->getStockThreshold($barang);
+                    return $barang->jumlah_stok < $threshold
                         ? '<span class="font-bold text-red-600">' . $barang->jumlah_stok . '</span>'
                         : $barang->jumlah_stok;
                 })
                 ->addColumn('formatted_masuk', function ($barang) {
-                    // Menggunakan stok_masuk yang sudah terupdate di database
                     return $barang->stok_masuk ?? 0;
                 })
                 ->addColumn('formatted_keluar', function ($barang) {
-                    // Menggunakan stok_keluar yang sudah terupdate di database
                     return $barang->stok_keluar ?? 0;
                 })
                 ->addColumn('action', function ($barang) {
@@ -79,21 +110,40 @@ class BarangController extends Controller
                 ->make(true);
         }
 
-        $stokRendahBarangs = Barang::where('jumlah_stok', '<', 100)->get();
+        // DIUBAH: Logika untuk menghitung barang stok rendah agar dinamis
+        // Kita perlu mengambil semua barang dan memfilter secara manual
+        // karena ambang batas stok bisa berbeda per barang.
+        $allBarangs = Barang::all();
 
+        $stokRendahBarangs = $allBarangs->filter(function ($barang) {
+            return $barang->jumlah_stok < $this->getStockThreshold($barang);
+        });
+
+        // Hitung jumlah barang stok rendah
+        $stokRendahCount = $stokRendahBarangs->count();
+
+        // Bagian kadaluarsa tetap sama karena tidak terkait dengan pengaturan stok baru
         $kadaluarsaBarangs = Barang::whereNotNull('expired')
-            ->where(function ($query) use ($currentYear) {
-                $query->whereYear('expired', '=', $currentYear)
-                      ->orWhere('expired', '<', Carbon::now());
-            })
+            ->where('expired', '<', Carbon::now()->addMonths(3))
             ->get();
 
-        return view('admin.barangs.index', compact('stokRendahBarangs', 'kadaluarsaBarangs'));
+        $kadaluarsaCount = Barang::whereNotNull('expired')
+            ->where('expired', '<', Carbon::now())
+            ->count();
+
+        $mendekatiKadaluarsaCount = Barang::whereNotNull('expired')
+            ->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])
+            ->count();
+
+        return view('admin.barangs.index', compact(
+            'stokRendahBarangs',
+            'kadaluarsaBarangs',
+            'stokRendahCount',
+            'kadaluarsaCount',
+            'mendekatiKadaluarsaCount'
+        ));
     }
 
-    /**
-     * Menampilkan form untuk membuat barang baru.
-     */
     public function create()
     {
         $satuanOptions = ['Box', 'Pcs', 'Botol', 'Galon', 'Unit'];
@@ -101,11 +151,6 @@ class BarangController extends Controller
         return view('admin.barangs.create', compact('satuanOptions', 'statusOptions'));
     }
 
-    /**
-     * Menyimpan barang baru ke database.
-     * Stok masuk dan keluar diinisialisasi 0.
-     * Jumlah stok awal barang dari stok_awal.
-     */
     public function store(BarangRequest $request)
     {
         $data = $request->validated();
@@ -122,12 +167,8 @@ class BarangController extends Controller
             $data['expired'] = null;
         }
 
-        // Inisialisasi stok_masuk dan stok_keluar menjadi 0.
-        // Nilai ini akan diakumulasi dari transaksi Laporan (retur), Penjualan,
-        // dan pembelian manual melalui form edit (untuk stok_masuk).
         $data['stok_masuk'] = 0;
         $data['stok_keluar'] = 0;
-        // Jumlah stok awal barang hanya berdasarkan stok_awal yang dimasukkan.
         $data['jumlah_stok'] = $data['stok_awal'];
 
         Barang::create($data);
@@ -135,18 +176,12 @@ class BarangController extends Controller
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil ditambahkan!');
     }
 
-    /**
-     * Menampilkan detail barang.
-     */
     public function show($id)
     {
         $barang = Barang::findOrFail($id);
         return view('admin.barangs.show', compact('barang'));
     }
 
-    /**
-     * Menampilkan form untuk mengedit barang.
-     */
     public function edit(Barang $barang)
     {
         $satuanOptions = ['Box', 'Pcs', 'Botol', 'Galon', 'Unit'];
@@ -154,12 +189,6 @@ class BarangController extends Controller
         return view('admin.barangs.edit', compact('barang', 'satuanOptions', 'statusOptions'));
     }
 
-    /**
-     * Memperbarui data barang di database.
-     * Stok awal dan stok masuk (pembelian/tambahan) bisa diubah di sini.
-     * Stok keluar tidak boleh diubah langsung.
-     * Jumlah stok akan dihitung ulang berdasarkan perubahan ini.
-     */
     public function update(BarangRequest $request, Barang $barang)
     {
         $data = $request->validated();
@@ -180,17 +209,12 @@ class BarangController extends Controller
             $data['expired'] = null;
         }
 
-        // Ambil nilai stok_awal dan stok_masuk dari request.
-        // Jika tidak ada di request (misal tidak diisi di form), gunakan nilai lama dari database.
         $newStokAwal = $data['stok_awal'] ?? $barang->stok_awal;
         $newStokMasuk = $data['stok_masuk'] ?? $barang->stok_masuk;
 
-        // Stok_keluar tidak boleh diubah langsung dari form ini.
-        // Nilainya hanya boleh diupdate melalui PenjualanController.
         $currentStokKeluar = $barang->stok_keluar;
-        unset($data['stok_keluar']); // Pastikan ini tidak dimasukkan ke dalam update()
+        unset($data['stok_keluar']);
 
-        // Hitung ulang jumlah_stok berdasarkan stok_awal, stok_masuk (dari form/lama), dan stok_keluar (dari DB).
         $data['jumlah_stok'] = $newStokAwal + $newStokMasuk - $currentStokKeluar;
 
         $barang->update($data);
@@ -198,9 +222,6 @@ class BarangController extends Controller
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil diperbarui!');
     }
 
-    /**
-     * Menghapus barang dari database.
-     */
     public function destroy(Barang $barang)
     {
         $barang->delete();
