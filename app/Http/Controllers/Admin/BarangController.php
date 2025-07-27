@@ -39,7 +39,6 @@ class BarangController extends Controller
                     return '-';
                 })
                 ->addColumn('formatted_stok', function ($barang) {
-                    // Jika satuan galon dan stok < 1, warna merah
                     if (strtolower($barang->satuan) == 'galon') {
                         if ($barang->jumlah_stok < 1) {
                             return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
@@ -47,7 +46,6 @@ class BarangController extends Controller
                             return $barang->jumlah_stok;
                         }
                     } else {
-                        // Untuk satuan lain, stok < 100 warna merah
                         if ($barang->jumlah_stok < 100) {
                             return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
                         } else {
@@ -82,7 +80,7 @@ class BarangController extends Controller
                 ->make(true);
         }
 
-        // Hitung statistik dari cache atau hitung ulang
+        // Statistik kadaluarsa dan mendekati kadaluarsa
         $kadaluarsaCount = Cache::remember('kadaluarsaCount', 300, function () {
             return Barang::whereNotNull('expired')
                 ->where('expired', '<', Carbon::now())
@@ -95,7 +93,7 @@ class BarangController extends Controller
                 ->count();
         });
 
-        // Hitung stok rendah sesuai kondisi: galon <1, selain galon <100
+        // Stok rendah (galon <1, lainnya <100)
         $stokRendahCount = Cache::remember('stokRendahCount', 300, function () {
             return Barang::where(function($query) {
                 $query->where(function($q) {
@@ -108,7 +106,7 @@ class BarangController extends Controller
             })->count();
         });
 
-        // Ambil daftar barang stok rendah sesuai kondisi
+        // Daftar barang stok rendah sesuai kondisi
         $stokRendahBarangs = Barang::where(function($query) {
             $query->where(function($q) {
                 $q->where('satuan', 'Galon')
@@ -127,7 +125,6 @@ class BarangController extends Controller
         ));
     }
 
-    // Refresh cache statistik
     protected function refreshCounts()
     {
         Cache::forget('kadaluarsaCount');
@@ -168,7 +165,6 @@ class BarangController extends Controller
     {
         $data = $request->validated();
 
-        // Generate slug unik
         $originalSlug = Str::slug($data['nama_produk']);
         $slug = $originalSlug;
         $countSlug = 1;
@@ -185,10 +181,8 @@ class BarangController extends Controller
         $data['stok_keluar'] = 0;
         $data['jumlah_stok'] = $data['stok_awal'];
 
-        // Simpan data
         $barang = Barang::create($data);
 
-        // Refresh cache statistik
         $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil ditambahkan!');
@@ -211,7 +205,6 @@ class BarangController extends Controller
     {
         $data = $request->validated();
 
-        // Jika nama produk berubah, update slug
         if ($request->filled('nama_produk') && $request->nama_produk !== $barang->nama_produk) {
             $originalSlug = Str::slug($data['nama_produk']);
             $slug = $originalSlug;
@@ -239,7 +232,6 @@ class BarangController extends Controller
         // Update data
         $barang->update($data);
 
-        // Refresh cache statistik
         $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil diperbarui!');
@@ -249,7 +241,6 @@ class BarangController extends Controller
     {
         $barang->delete();
 
-        // Refresh cache statistik
         $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil dihapus.');
