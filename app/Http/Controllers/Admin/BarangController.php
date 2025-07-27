@@ -10,52 +10,15 @@ use Yajra\DataTables\DataTables;
 use App\Http\Requests\BarangRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cache;
 
 class BarangController extends Controller
 {
-    /**
-     * Helper untuk mendapatkan ambang batas stok dinamis per barang.
-     * Prioritas:
-     * 1. product_thresholds (berdasarkan slug produk)
-     * 2. unit_thresholds (berdasarkan satuan produk)
-     * 3. default_threshold
-     *
-     * @param \App\Models\Barang $barang
-     * @return int
-     */
-    private function getStockThreshold($barang)
-    {
-        // Ambil semua pengaturan dari file konfigurasi stock_threshold.php
-        // Pastikan untuk memberikan array kosong sebagai default jika file config tidak ada
-        $settings = Config::get('stock_threshold', [
-            'default_threshold' => 100,
-            'unit_thresholds' => [],
-            'product_thresholds' => [],
-        ]);
-
-        // 1. Cek ambang batas spesifik per produk berdasarkan slug
-        if (isset($settings['product_thresholds'][$barang->slug])) {
-            return (int) $settings['product_thresholds'][$barang->slug];
-        }
-
-        // 2. Cek ambang batas berdasarkan satuan produk (case-insensitive)
-        // Pastikan 'unit_thresholds' ada dan bukan null
-        if (isset($settings['unit_thresholds']) && isset($settings['unit_thresholds'][strtolower($barang->satuan)])) {
-            return (int) $settings['unit_thresholds'][strtolower($barang->satuan)];
-        }
-
-        // 3. Gunakan ambang batas default
-        return (int) ($settings['default_threshold'] ?? 100);
-    }
-
+    // Fungsi utama index
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            // Untuk DataTables, kita perlu semua kolom yang relevan untuk ditampilkan
-            // dan juga 'satuan' dan 'slug' untuk perhitungan formatted_stok
-            $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok', 'barangs.satuan', 'barangs.slug');
+            $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok');
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -77,11 +40,21 @@ class BarangController extends Controller
                     return '-';
                 })
                 ->addColumn('formatted_stok', function ($barang) {
-                    // Menggunakan helper getStockThreshold untuk ambang batas dinamis
-                    $threshold = $this->getStockThreshold($barang);
-                    return $barang->jumlah_stok < $threshold
-                        ? '<span class="font-bold text-red-600">' . $barang->jumlah_stok . '</span>'
-                        : $barang->jumlah_stok;
+                    // Jika satuan galon dan stok < 1, warna merah
+                    if (strtolower($barang->satuan) == 'galon') {
+                        if ($barang->jumlah_stok < 1) {
+                            return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
+                        } else {
+                            return $barang->jumlah_stok;
+                        }
+                    } else {
+                        // Untuk satuan lain, stok < 100 warna merah
+                        if ($barang->jumlah_stok < 100) {
+                            return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
+                        } else {
+                            return $barang->jumlah_stok;
+                        }
+                    }
                 })
                 ->addColumn('formatted_masuk', function ($barang) {
                     return $barang->stok_masuk ?? 0;
@@ -110,47 +83,51 @@ class BarangController extends Controller
                 ->make(true);
         }
 
-        // DITAMBAHKAN: Caching untuk statistik dashboard
-        // Data akan di-cache selama 5 menit (300 detik)
-        $cacheDuration = 300; // Durasi cache dalam detik (5 menit)
-
-        // Cache untuk Barang Stok Rendah
-        $stokRendahData = Cache::remember('admin_stok_rendah_data', $cacheDuration, function () {
-            $allBarangsForDashboard = Barang::select('id', 'nama_produk', 'jumlah_stok', 'satuan', 'slug')->get();
-            $stokRendahBarangs = $allBarangsForDashboard->filter(function ($barang) {
-                return $barang->jumlah_stok < $this->getStockThreshold($barang);
-            });
-            return [
-                'barangs' => $stokRendahBarangs,
-                'count' => $stokRendahBarangs->count(),
-            ];
+        // Ambil count dari cache, jika belum ada akan dihit dan disimpan
+        $kadaluarsaCount = Cache::remember('kadaluarsaCount', 300, function () {
+            return Barang::whereNotNull('expired')
+                ->where('expired', '<', Carbon::now())
+                ->count();
         });
-        $stokRendahBarangs = $stokRendahData['barangs'];
-        $stokRendahCount = $stokRendahData['count'];
 
-        // Cache untuk Barang Kadaluarsa
-        $kadaluarsaData = Cache::remember('admin_kadaluarsa_data', $cacheDuration, function () {
-            $kadaluarsaBarangs = Barang::select('id', 'nama_produk', 'expired')
-                ->whereNotNull('expired')
-                ->where('expired', '<', Carbon::now()->addMonths(3))
-                ->get();
-            return [
-                'barangs' => $kadaluarsaBarangs,
-                'count' => Barang::whereNotNull('expired')->where('expired', '<', Carbon::now())->count(),
-                'mendekati_count' => Barang::whereNotNull('expired')->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])->count(),
-            ];
+        $mendekatiKadaluarsaCount = Cache::remember('mendekatiKadaluarsaCount', 300, function () {
+            return Barang::whereNotNull('expired')
+                ->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])
+                ->count();
         });
-        $kadaluarsaBarangs = $kadaluarsaData['barangs'];
-        $kadaluarsaCount = $kadaluarsaData['count'];
-        $mendekatiKadaluarsaCount = $kadaluarsaData['mendekati_count'];
+
+        $stokRendahCount = Cache::remember('stokRendahCount', 300, function () {
+            return Barang::where('jumlah_stok', '<', 100)->count();
+        });
 
         return view('admin.barangs.index', compact(
-            'stokRendahBarangs',
-            'kadaluarsaBarangs',
-            'stokRendahCount',
             'kadaluarsaCount',
-            'mendekatiKadaluarsaCount'
+            'mendekatiKadaluarsaCount',
+            'stokRendahCount'
         ));
+    }
+
+    // Saat barang ditambah, diupdate, atau dihapus, cache akan di-refresh
+    protected function refreshCounts()
+    {
+        Cache::forget('kadaluarsaCount');
+        Cache::forget('mendekatiKadaluarsaCount');
+        Cache::forget('stokRendahCount');
+
+        // Hitung dan simpan kembali
+        Cache::remember('kadaluarsaCount', 300, function () {
+            return Barang::whereNotNull('expired')
+                ->where('expired', '<', Carbon::now())
+                ->count();
+        });
+        Cache::remember('mendekatiKadaluarsaCount', 300, function () {
+            return Barang::whereNotNull('expired')
+                ->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])
+                ->count();
+        });
+        Cache::remember('stokRendahCount', 300, function () {
+            return Barang::where('jumlah_stok', '<', 100)->count();
+        });
     }
 
     public function create()
@@ -164,11 +141,12 @@ class BarangController extends Controller
     {
         $data = $request->validated();
 
+        // Generate slug unik
         $originalSlug = Str::slug($data['nama_produk']);
         $slug = $originalSlug;
-        $count = 1;
+        $countSlug = 1;
         while (Barang::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count++;
+            $slug = $originalSlug . '-' . $countSlug++;
         }
         $data['slug'] = $slug;
 
@@ -180,11 +158,11 @@ class BarangController extends Controller
         $data['stok_keluar'] = 0;
         $data['jumlah_stok'] = $data['stok_awal'];
 
-        Barang::create($data);
+        // Simpan data
+        $barang = Barang::create($data);
 
-        // DITAMBAHKAN: Hapus cache terkait setelah data barang diubah
-        Cache::forget('admin_stok_rendah_data');
-        Cache::forget('admin_kadaluarsa_data');
+        // Refresh cache count setelah data baru disimpan
+        $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil ditambahkan!');
     }
@@ -206,12 +184,13 @@ class BarangController extends Controller
     {
         $data = $request->validated();
 
+        // Jika nama produk berubah, update slug
         if ($request->filled('nama_produk') && $request->nama_produk !== $barang->nama_produk) {
             $originalSlug = Str::slug($data['nama_produk']);
             $slug = $originalSlug;
-            $count = 1;
+            $countSlug = 1;
             while (Barang::where('slug', $slug)->where('id', '!=', $barang->id)->exists()) {
-                $slug = $originalSlug . '-' . $count++;
+                $slug = $originalSlug . '-' . $countSlug++;
             }
             $data['slug'] = $slug;
         } else {
@@ -222,19 +201,19 @@ class BarangController extends Controller
             $data['expired'] = null;
         }
 
-        $newStokAwal = $data['stok_awal'] ?? $barang->stok_awal;
-        $newStokMasuk = $data['stok_masuk'] ?? $barang->stok_masuk;
+        // Hitung stok baru dan stok keluar
+        $stok_awal = $barang->stok_awal ?? 0;
+        $stok_masuk = $data['stok_masuk'] ?? 0;
+        $stok_keluar = $barang->stok_keluar ?? 0;
 
-        $currentStokKeluar = $barang->stok_keluar;
-        unset($data['stok_keluar']);
+        // Update jumlah stok
+        $data['jumlah_stok'] = $stok_awal + $stok_masuk - $stok_keluar;
 
-        $data['jumlah_stok'] = $newStokAwal + $newStokMasuk - $currentStokKeluar;
-
+        // Update data
         $barang->update($data);
 
-        // DITAMBAHKAN: Hapus cache terkait setelah data barang diubah
-        Cache::forget('admin_stok_rendah_data');
-        Cache::forget('admin_kadaluarsa_data');
+        // Refresh cache count setelah update
+        $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil diperbarui!');
     }
@@ -242,9 +221,9 @@ class BarangController extends Controller
     public function destroy(Barang $barang)
     {
         $barang->delete();
-        // DITAMBAHKAN: Hapus cache terkait setelah data barang diubah
-        Cache::forget('admin_stok_rendah_data');
-        Cache::forget('admin_kadaluarsa_data');
+
+        // Refresh cache count setelah delete
+        $this->refreshCounts();
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil dihapus.');
     }
