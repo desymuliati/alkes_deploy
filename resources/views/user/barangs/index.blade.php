@@ -122,12 +122,26 @@
                 </div>
             @endif
 
+            {{-- NEW: Peringatan Barang Mendekati Kadaluarsa --}}
+            @if (isset($mendekatiKadaluarsaBarangs) && $mendekatiKadaluarsaBarangs->isNotEmpty())
+                <div class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4 rounded-lg shadow-md">
+                    <p class="font-bold">Peringatan Barang Mendekati Kadaluarsa!</p>
+                    <ul class="list-disc ml-5 mt-2">
+                        @foreach ($mendekatiKadaluarsaBarangs as $barang)
+                            <li>{{ $barang->nama_produk }} (Mendekati Kadaluarsa: {{ \Carbon\Carbon::parse($barang->expired)->format('d M Y') }})</li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-2 text-sm">Segera periksa dan ambil tindakan.</p>
+                </div>
+            @endif
+
+
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 sm:px-20">
                 <div class="text-2xl font-bold text-gray-800 mb-4">Daftar Barang</div>
 
                 <div id="loading-spinner" class="flex justify-center items-center py-10">
                     <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24">
+                         viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10"
                                 stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor"
