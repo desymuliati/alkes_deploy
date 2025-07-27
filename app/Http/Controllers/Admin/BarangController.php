@@ -11,6 +11,7 @@ use App\Http\Requests\BarangRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cache;
 
 class BarangController extends Controller
 {
@@ -28,7 +29,7 @@ class BarangController extends Controller
     {
         // Ambil semua pengaturan dari file konfigurasi stock_threshold.php
         // Pastikan untuk memberikan array kosong sebagai default jika file config tidak ada
-        $settings = Config::get('stock_threshold', [ // Ini sudah lebih baik dari sebelumnya
+        $settings = Config::get('stock_threshold', [
             'default_threshold' => 100,
             'unit_thresholds' => [],
             'product_thresholds' => [],
@@ -54,8 +55,7 @@ class BarangController extends Controller
         if ($request->ajax()) {
             // Untuk DataTables, kita perlu semua kolom yang relevan untuk ditampilkan
             // dan juga 'satuan' dan 'slug' untuk perhitungan formatted_stok
-            // Perbaikan: Pastikan 'satuan' dan 'slug' juga diambil di sini
-            $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok', 'barangs.satuan', 'barangs.slug'); // DITAMBAHKAN: 'satuan' dan 'slug'
+            $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok', 'barangs.satuan', 'barangs.slug');
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -110,31 +110,39 @@ class BarangController extends Controller
                 ->make(true);
         }
 
-        // Hitung daftar dan jumlah untuk dashboard
-        // DIUBAH: Hanya ambil kolom yang relevan untuk perhitungan stok rendah
-        // Ini mengurangi jumlah data yang ditarik dari DB secara signifikan
-        $allBarangsForDashboard = Barang::select('id', 'nama_produk', 'jumlah_stok', 'satuan', 'slug')->get(); // Sudah benar
+        // DITAMBAHKAN: Caching untuk statistik dashboard
+        // Data akan di-cache selama 5 menit (300 detik)
+        $cacheDuration = 300; // Durasi cache dalam detik (5 menit)
 
-        $stokRendahBarangs = $allBarangsForDashboard->filter(function ($barang) {
-            return $barang->jumlah_stok < $this->getStockThreshold($barang);
+        // Cache untuk Barang Stok Rendah
+        $stokRendahData = Cache::remember('admin_stok_rendah_data', $cacheDuration, function () {
+            $allBarangsForDashboard = Barang::select('id', 'nama_produk', 'jumlah_stok', 'satuan', 'slug')->get();
+            $stokRendahBarangs = $allBarangsForDashboard->filter(function ($barang) {
+                return $barang->jumlah_stok < $this->getStockThreshold($barang);
+            });
+            return [
+                'barangs' => $stokRendahBarangs,
+                'count' => $stokRendahBarangs->count(),
+            ];
         });
+        $stokRendahBarangs = $stokRendahData['barangs'];
+        $stokRendahCount = $stokRendahData['count'];
 
-        // Hitung jumlah barang stok rendah
-        $stokRendahCount = $stokRendahBarangs->count();
-
-        // DIUBAH: Untuk kadaluarsa, juga hanya ambil kolom yang relevan
-        $kadaluarsaBarangs = Barang::select('id', 'nama_produk', 'expired') // Sudah benar
-            ->whereNotNull('expired')
-            ->where('expired', '<', Carbon::now()->addMonths(3))
-            ->get();
-
-        $kadaluarsaCount = Barang::whereNotNull('expired')
-            ->where('expired', '<', Carbon::now())
-            ->count();
-
-        $mendekatiKadaluarsaCount = Barang::whereNotNull('expired')
-            ->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])
-            ->count();
+        // Cache untuk Barang Kadaluarsa
+        $kadaluarsaData = Cache::remember('admin_kadaluarsa_data', $cacheDuration, function () {
+            $kadaluarsaBarangs = Barang::select('id', 'nama_produk', 'expired')
+                ->whereNotNull('expired')
+                ->where('expired', '<', Carbon::now()->addMonths(3))
+                ->get();
+            return [
+                'barangs' => $kadaluarsaBarangs,
+                'count' => Barang::whereNotNull('expired')->where('expired', '<', Carbon::now())->count(),
+                'mendekati_count' => Barang::whereNotNull('expired')->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])->count(),
+            ];
+        });
+        $kadaluarsaBarangs = $kadaluarsaData['barangs'];
+        $kadaluarsaCount = $kadaluarsaData['count'];
+        $mendekatiKadaluarsaCount = $kadaluarsaData['mendekati_count'];
 
         return view('admin.barangs.index', compact(
             'stokRendahBarangs',
@@ -173,6 +181,10 @@ class BarangController extends Controller
         $data['jumlah_stok'] = $data['stok_awal'];
 
         Barang::create($data);
+
+        // DITAMBAHKAN: Hapus cache terkait setelah data barang diubah
+        Cache::forget('admin_stok_rendah_data');
+        Cache::forget('admin_kadaluarsa_data');
 
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil ditambahkan!');
     }
@@ -220,12 +232,20 @@ class BarangController extends Controller
 
         $barang->update($data);
 
+        // DITAMBAHKAN: Hapus cache terkait setelah data barang diubah
+        Cache::forget('admin_stok_rendah_data');
+        Cache::forget('admin_kadaluarsa_data');
+
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil diperbarui!');
     }
 
     public function destroy(Barang $barang)
     {
         $barang->delete();
+        // DITAMBAHKAN: Hapus cache terkait setelah data barang diubah
+        Cache::forget('admin_stok_rendah_data');
+        Cache::forget('admin_kadaluarsa_data');
+
         return redirect()->route('admin.barangs.index')->with('success', 'Barang berhasil dihapus.');
     }
 }
