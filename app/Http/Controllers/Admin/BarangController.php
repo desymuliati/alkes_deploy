@@ -40,12 +40,14 @@ class BarangController extends Controller
                 })
                 ->addColumn('formatted_stok', function ($barang) {
                     if (strtolower($barang->satuan) == 'galon') {
-                        if ($barang->jumlah_stok < 1) {
+                        // Highlight if stock is 1 or less for 'Galon'
+                        if ($barang->jumlah_stok <= 1) {
                             return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
                         } else {
                             return $barang->jumlah_stok;
                         }
                     } else {
+                        // Highlight if stock is less than 100 for other units
                         if ($barang->jumlah_stok < 100) {
                             return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
                         } else {
@@ -93,12 +95,12 @@ class BarangController extends Controller
                 ->count();
         });
 
-        // Stok rendah (galon <1, lainnya <100)
+        // Stok rendah (galon <= 1, lainnya < 100)
         $stokRendahCount = Cache::remember('stokRendahCount', 300, function () {
             return Barang::where(function($query) {
                 $query->where(function($q) {
                     $q->where('satuan', 'Galon')
-                      ->where('jumlah_stok', '<', 1);
+                      ->where('jumlah_stok', '<=', 1); // Changed to <= 1
                 })->orWhere(function($q) {
                     $q->where('satuan', '<>', 'Galon')
                       ->where('jumlah_stok', '<', 100);
@@ -110,18 +112,25 @@ class BarangController extends Controller
         $stokRendahBarangs = Barang::where(function($query) {
             $query->where(function($q) {
                 $q->where('satuan', 'Galon')
-                  ->where('jumlah_stok', '<', 1);
+                  ->where('jumlah_stok', '<=', 1); // Changed to <= 1
             })->orWhere(function($q) {
                 $q->where('satuan', '<>', 'Galon')
                   ->where('jumlah_stok', '<', 100);
             });
         })->get();
 
+        // Daftar barang kadaluarsa
+        $kadaluarsaBarangs = Barang::whereNotNull('expired')
+            ->where('expired', '<', Carbon::now())
+            ->get();
+
+
         return view('admin.barangs.index', compact(
             'kadaluarsaCount',
             'mendekatiKadaluarsaCount',
             'stokRendahCount',
-            'stokRendahBarangs'
+            'stokRendahBarangs',
+            'kadaluarsaBarangs' // Pass the list of expired items to the view
         ));
     }
 
@@ -145,7 +154,7 @@ class BarangController extends Controller
             return Barang::where(function($query) {
                 $query->where(function($q) {
                     $q->where('satuan', 'Galon')
-                      ->where('jumlah_stok', '<', 1);
+                      ->where('jumlah_stok', '<=', 1); // Changed to <= 1
                 })->orWhere(function($q) {
                     $q->where('satuan', '<>', 'Galon')
                       ->where('jumlah_stok', '<', 100);
