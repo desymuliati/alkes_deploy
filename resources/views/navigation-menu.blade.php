@@ -104,6 +104,10 @@
                 <a href="{{ route('admin.users.index') }}" class="block px-4 py-2 hover:bg-gray-700 rounded {{ request()->routeIs('admin.users.index') ? 'bg-gray-700 text-white' : '' }}" onclick="toggleSidebar()">
                     <i class="fa fa-users mr-2"></i>Kelola Pengguna
                 </a>
+                {{-- DITAMBAHKAN: Link untuk Pengaturan Stok --}}
+                <a href="{{ route('admin.stock_settings.index') }}" class="block px-4 py-2 hover:bg-gray-700 rounded {{ request()->routeIs('admin.stock_settings.index') ? 'bg-gray-700 text-white' : '' }}" onclick="toggleSidebar()">
+                    <i class="fa fa-cog mr-2"></i>Pengaturan Stok
+                </a>
             @else
                 {{-- Tautan untuk User Biasa --}}
                 <a href="{{ route('user.dashboard') }}" class="block px-4 py-2 hover:bg-gray-700 rounded {{ request()->routeIs('user.dashboard') ? 'bg-gray-700 text-white' : '' }}" onclick="toggleSidebar()">
