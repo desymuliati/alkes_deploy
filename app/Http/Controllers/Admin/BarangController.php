@@ -11,7 +11,6 @@ use App\Http\Requests\BarangRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-use App\Models\AppSetting;
 
 class BarangController extends Controller
 {
@@ -19,11 +18,6 @@ class BarangController extends Controller
     {
         if ($request->ajax()) {
             $query = Barang::select('barangs.*', 'barangs.stok_masuk', 'barangs.stok_keluar', 'barangs.jumlah_stok');
-
-            // Ambil setting limit stok dari app_settings
-            $stokLimits = AppSetting::where('setting_key', 'like', 'limit_stok_%')
-                ->where('is_active', true)
-                ->pluck('setting_value', 'unit');
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -44,14 +38,22 @@ class BarangController extends Controller
                     }
                     return '-';
                 })
-                ->addColumn('formatted_stok', function ($barang) use ($stokLimits) {
-                    $unit = strtolower($barang->satuan);
-                    $limit = $stokLimits->get($unit, ($unit === 'galon' ? 1 : 100));
-
-                    if ($barang->jumlah_stok < $limit) {
-                        return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
+                ->addColumn('formatted_stok', function ($barang) {
+                    if (strtolower($barang->satuan) == 'galon') {
+                        // Highlight if stock is 1 or less for 'Galon'
+                        if ($barang->jumlah_stok <= 1) {
+                            return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
+                        } else {
+                            return $barang->jumlah_stok;
+                        }
+                    } else {
+                        // Highlight if stock is less than 100 for other units
+                        if ($barang->jumlah_stok < 100) {
+                            return '<span class="text-red-600">' . $barang->jumlah_stok . '</span>';
+                        } else {
+                            return $barang->jumlah_stok;
+                        }
                     }
-                    return $barang->jumlah_stok;
                 })
                 ->addColumn('formatted_masuk', function ($barang) {
                     return $barang->stok_masuk ?? 0;
@@ -60,12 +62,27 @@ class BarangController extends Controller
                     return $barang->stok_keluar ?? 0;
                 })
                 ->addColumn('action', function ($barang) {
-                    return view('admin.barangs._action', compact('barang'))->render();
+                    return '
+                        <a class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150 mr-2"
+                            href="' . route('admin.barangs.show', $barang->id) . '">
+                            Detail
+                        </a>
+                        <a class="inline-flex items-center px-4 py-2 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:border-yellow-900 focus:ring ring-yellow-300 disabled:opacity-25 transition ease-in-out duration-150 mr-2"
+                            href="' . route('admin.barangs.edit', $barang->id) . '">
+                            Sunting
+                        </a>
+                        <form class="inline-block" onsubmit="return confirm(\'Apakah Anda yakin ingin menghapus ' . addslashes($barang->nama_produk) . '?\');" action="' . route('admin.barangs.destroy', $barang->id) . '" method="POST">
+                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                Hapus
+                            </button>
+                            ' . method_field('delete') . csrf_field() . '
+                        </form>';
                 })
                 ->rawColumns(['action', 'formatted_expired', 'formatted_stok'])
                 ->make(true);
         }
 
+        // Statistik kadaluarsa dan mendekati kadaluarsa
         $kadaluarsaCount = Cache::remember('kadaluarsaCount', 300, function () {
             return Barang::whereNotNull('expired')
                 ->where('expired', '<', Carbon::now())
@@ -78,31 +95,40 @@ class BarangController extends Controller
                 ->count();
         });
 
-        $stokLimits = AppSetting::where('setting_key', 'like', 'limit_stok_%')
-            ->where('is_active', true)
-            ->pluck('setting_value', 'unit');
-
-        $stokRendahCount = Cache::remember('stokRendahCount', 300, function () use ($stokLimits) {
-            return Barang::all()->filter(function ($barang) use ($stokLimits) {
-                $unit = strtolower($barang->satuan);
-                $limit = $stokLimits->get($unit, ($unit === 'galon' ? 1 : 100));
-                return $barang->jumlah_stok < $limit;
+        // Stok rendah (galon <= 1, lainnya < 100)
+        $stokRendahCount = Cache::remember('stokRendahCount', 300, function () {
+            return Barang::where(function($query) {
+                $query->where(function($q) {
+                    $q->where('satuan', 'Galon')
+                      ->where('jumlah_stok', '<=', 1);
+                })->orWhere(function($q) {
+                    $q->where('satuan', '<>', 'Galon')
+                      ->where('jumlah_stok', '<', 100);
+                });
             })->count();
         });
 
-        $stokRendahBarangs = Barang::all()->filter(function ($barang) use ($stokLimits) {
-            $unit = strtolower($barang->satuan);
-            $limit = $stokLimits->get($unit, ($unit === 'galon' ? 1 : 100));
-            return $barang->jumlah_stok < $limit;
-        });
+        // Daftar barang stok rendah sesuai kondisi
+        $stokRendahBarangs = Barang::where(function($query) {
+            $query->where(function($q) {
+                $q->where('satuan', 'Galon')
+                  ->where('jumlah_stok', '<=', 1);
+            })->orWhere(function($q) {
+                $q->where('satuan', '<>', 'Galon')
+                  ->where('jumlah_stok', '<', 100);
+            });
+        })->get();
 
+        // Daftar barang kadaluarsa
         $kadaluarsaBarangs = Barang::whereNotNull('expired')
             ->where('expired', '<', Carbon::now())
             ->get();
 
+        // Daftar barang mendekati kadaluarsa - THIS IS THE NEW PART
         $mendekatiKadaluarsaBarangs = Barang::whereNotNull('expired')
             ->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])
             ->get();
+
 
         return view('admin.barangs.index', compact(
             'kadaluarsaCount',
@@ -110,15 +136,38 @@ class BarangController extends Controller
             'stokRendahCount',
             'stokRendahBarangs',
             'kadaluarsaBarangs',
-            'mendekatiKadaluarsaBarangs'
+            'mendekatiKadaluarsaBarangs' // Now passing the list to the view
         ));
     }
 
     protected function refreshCounts()
     {
+        // ... (this method remains the same as it correctly calculates counts)
         Cache::forget('kadaluarsaCount');
         Cache::forget('mendekatiKadaluarsaCount');
         Cache::forget('stokRendahCount');
+
+        Cache::remember('kadaluarsaCount', 300, function () {
+            return Barang::whereNotNull('expired')
+                ->where('expired', '<', Carbon::now())
+                ->count();
+        });
+        Cache::remember('mendekatiKadaluarsaCount', 300, function () {
+            return Barang::whereNotNull('expired')
+                ->whereBetween('expired', [Carbon::now(), Carbon::now()->addMonths(3)])
+                ->count();
+        });
+        Cache::remember('stokRendahCount', 300, function () {
+            return Barang::where(function($query) {
+                $query->where(function($q) {
+                    $q->where('satuan', 'Galon')
+                      ->where('jumlah_stok', '<=', 1);
+                })->orWhere(function($q) {
+                    $q->where('satuan', '<>', 'Galon')
+                      ->where('jumlah_stok', '<', 100);
+                });
+            })->count();
+        });
     }
 
     public function create()
@@ -131,20 +180,24 @@ class BarangController extends Controller
     public function store(BarangRequest $request)
     {
         $data = $request->validated();
-        $slug = Str::slug($data['nama_produk']);
-        $originalSlug = $slug;
-        $count = 1;
+
+        $originalSlug = Str::slug($data['nama_produk']);
+        $slug = $originalSlug;
+        $countSlug = 1;
         while (Barang::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count++;
+            $slug = $originalSlug . '-' . $countSlug++;
         }
         $data['slug'] = $slug;
 
-        $data['expired'] = $data['expired'] ?? null;
+        if (empty($data['expired'])) {
+            $data['expired'] = null;
+        }
+
         $data['stok_masuk'] = 0;
         $data['stok_keluar'] = 0;
         $data['jumlah_stok'] = $data['stok_awal'];
 
-        Barang::create($data);
+        $barang = Barang::create($data);
 
         $this->refreshCounts();
 
@@ -180,12 +233,19 @@ class BarangController extends Controller
             unset($data['slug']);
         }
 
-        $data['expired'] = $data['expired'] ?? null;
+        if (empty($data['expired'])) {
+            $data['expired'] = null;
+        }
+
+        // Hitung stok baru dan stok keluar
         $stok_awal = $barang->stok_awal ?? 0;
         $stok_masuk = $data['stok_masuk'] ?? 0;
         $stok_keluar = $barang->stok_keluar ?? 0;
+
+        // Update jumlah stok
         $data['jumlah_stok'] = $stok_awal + $stok_masuk - $stok_keluar;
 
+        // Update data
         $barang->update($data);
 
         $this->refreshCounts();
