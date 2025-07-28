@@ -36,6 +36,8 @@ Route::prefix('admin')->name('admin.')->middleware([
     Route::get('/laporans/get-barang-by-penjualan/{penjualanId}', [AdminLaporanController::class, 'getBarangByPenjualan'])->name('laporans.getBarangByPenjualan');
     Route::get('/laporans/export', [AdminLaporanController::class, 'export'])->name('laporans.export');
     Route::resource('laporans', AdminLaporanController::class);
+    Route::get('/setting/stok', [App\Http\Controllers\Admin\SettingStokController::class, 'index'])->name('setting.stok.index');
+    Route::post('/setting/stok/update', [App\Http\Controllers\Admin\SettingStokController::class, 'update'])->name('setting.stok.update');
 });
 
 // --- Halaman User (butuh login dan role USER) ---
