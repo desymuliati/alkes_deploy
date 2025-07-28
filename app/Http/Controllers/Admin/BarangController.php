@@ -173,7 +173,7 @@ class BarangController extends Controller
     public function create()
     {
         $satuanOptions = ['Box', 'Pcs', 'Botol', 'Galon', 'Unit'];
-        $statusOptions = ['Aktif', 'Nonaktif', 'Habis', 'Dalam Perjalanan'];
+        $statusOptions = ['Masuk', 'Keluar'];
         return view('admin.barangs.create', compact('satuanOptions', 'statusOptions'));
     }
 
@@ -213,7 +213,7 @@ class BarangController extends Controller
     public function edit(Barang $barang)
     {
         $satuanOptions = ['Box', 'Pcs', 'Botol', 'Galon', 'Unit'];
-        $statusOptions = ['Aktif', 'Nonaktif', 'Habis', 'Dalam Perjalanan'];
+        $statusOptions = ['Masuk', 'Keluar'];
         return view('admin.barangs.edit', compact('barang', 'satuanOptions', 'statusOptions'));
     }
 
